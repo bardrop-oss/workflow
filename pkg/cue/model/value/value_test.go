@@ -201,6 +201,37 @@ a: b: c: [{x: 100}, {x: 101}, {x: 102}]`,
 }`,
 		},
 		{
+			name: "index into missing field creates a list",
+			raw:  `a: b: "hello"`,
+			path: "a.c[0]",
+			v:    `99`,
+			expected: `a: {
+	b: "hello"
+	c: [99]
+}`,
+		},
+		{
+			name: "index into missing nested field creates lists",
+			raw:  `a: b: "hello"`,
+			path: "a.c[0].d[1]",
+			v:    `99`,
+			expected: `a: {
+	b: "hello"
+	c: [{
+		d: [{}, 99]
+	}]
+}`,
+		},
+		{
+			name: "index past the end of a list with a deeper path",
+			raw:  `a: c: []`,
+			path: "a.c[0].d",
+			v:    `99`,
+			expected: `a: c: [{
+	d: 99
+}]`,
+		},
+		{
 			name: "path with string index",
 			raw:  `a: b: [{x: y:[{name: "key"}]}]`,
 			path: "a.c[\"x\"]",

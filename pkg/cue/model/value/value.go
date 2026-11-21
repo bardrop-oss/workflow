@@ -71,6 +71,9 @@ func setValue(orig ast.Node, expr ast.Expr, selectors []cue.Selector) error {
 			x.Elts[key.Index()] = expr
 			return nil
 		}
+		for key.Index() >= len(x.Elts) {
+			x.Elts = append(x.Elts, newContainer(selectors[0]))
+		}
 		return setValue(x.Elts[key.Index()], expr, selectors)
 	case *ast.StructLit:
 		if len(x.Elts) == 0 || (key.Type() == cue.StringLabel && len(sets.LookUpAll(x, key.String())) == 0) {
@@ -82,7 +85,7 @@ func setValue(orig ast.Node, expr ast.Expr, selectors []cue.Selector) error {
 			} else {
 				x.Elts = append(x.Elts, &ast.Field{
 					Label: ast.NewString(key.String()),
-					Value: ast.NewStruct(),
+					Value: newContainer(selectors[0]),
 				})
 			}
 			return setValue(x.Elts[len(x.Elts)-1].(*ast.Field).Value, expr, selectors)
@@ -107,6 +110,15 @@ func setValue(orig ast.Node, expr ast.Expr, selectors []cue.Selector) error {
 		return fmt.Errorf("not support type %T", orig)
 	}
 	return nil
+}
+
+// newContainer returns an empty list when the next selector is an index and an
+// empty struct otherwise, so a missing field on the way to `x[0]` becomes a list.
+func newContainer(next cue.Selector) ast.Expr {
+	if next.Type() == cue.IndexLabel {
+		return ast.NewList()
+	}
+	return ast.NewStruct()
 }
 
 var syntaxLock sync.Mutex
